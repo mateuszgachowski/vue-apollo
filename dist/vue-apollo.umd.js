@@ -231,94 +231,104 @@
    *
    * @return {Function}  A new, throttled, function.
    */
-  function throttle ( delay, noTrailing, callback, debounceMode ) {
+  function throttle (delay, noTrailing, callback, debounceMode) {
+    /*
+     * After wrapper has stopped being called, this timeout ensures that
+     * `callback` is executed at the proper times in `throttle` and `end`
+     * debounce modes.
+     */
+    var timeoutID;
+    var cancelled = false; // Keep track of the last time `callback` was executed.
 
-  	/*
-  	 * After wrapper has stopped being called, this timeout ensures that
-  	 * `callback` is executed at the proper times in `throttle` and `end`
-  	 * debounce modes.
-  	 */
-  	var timeoutID;
+    var lastExec = 0; // Function to clear existing timeout
 
-  	// Keep track of the last time `callback` was executed.
-  	var lastExec = 0;
+    function clearExistingTimeout() {
+      if (timeoutID) {
+        clearTimeout(timeoutID);
+      }
+    } // Function to cancel next exec
 
-  	// `noTrailing` defaults to falsy.
-  	if ( typeof noTrailing !== 'boolean' ) {
-  		debounceMode = callback;
-  		callback = noTrailing;
-  		noTrailing = undefined;
-  	}
 
-  	/*
-  	 * The `wrapper` function encapsulates all of the throttling / debouncing
-  	 * functionality and when executed will limit the rate at which `callback`
-  	 * is executed.
-  	 */
-  	function wrapper () {
+    function cancel() {
+      clearExistingTimeout();
+      cancelled = true;
+    } // `noTrailing` defaults to falsy.
 
-  		var self = this;
-  		var elapsed = Number(new Date()) - lastExec;
-  		var args = arguments;
 
-  		// Execute `callback` and update the `lastExec` timestamp.
-  		function exec () {
-  			lastExec = Number(new Date());
-  			callback.apply(self, args);
-  		}
+    if (typeof noTrailing !== 'boolean') {
+      debounceMode = callback;
+      callback = noTrailing;
+      noTrailing = undefined;
+    }
+    /*
+     * The `wrapper` function encapsulates all of the throttling / debouncing
+     * functionality and when executed will limit the rate at which `callback`
+     * is executed.
+     */
 
-  		/*
-  		 * If `debounceMode` is true (at begin) this is used to clear the flag
-  		 * to allow future `callback` executions.
-  		 */
-  		function clear () {
-  			timeoutID = undefined;
-  		}
 
-  		if ( debounceMode && !timeoutID ) {
-  			/*
-  			 * Since `wrapper` is being called for the first time and
-  			 * `debounceMode` is true (at begin), execute `callback`.
-  			 */
-  			exec();
-  		}
+    function wrapper() {
+      var self = this;
+      var elapsed = Date.now() - lastExec;
+      var args = arguments;
 
-  		// Clear any existing timeout.
-  		if ( timeoutID ) {
-  			clearTimeout(timeoutID);
-  		}
+      if (cancelled) {
+        return;
+      } // Execute `callback` and update the `lastExec` timestamp.
 
-  		if ( debounceMode === undefined && elapsed > delay ) {
-  			/*
-  			 * In throttle mode, if `delay` time has been exceeded, execute
-  			 * `callback`.
-  			 */
-  			exec();
 
-  		} else if ( noTrailing !== true ) {
-  			/*
-  			 * In trailing throttle mode, since `delay` time has not been
-  			 * exceeded, schedule `callback` to execute `delay` ms after most
-  			 * recent execution.
-  			 *
-  			 * If `debounceMode` is true (at begin), schedule `clear` to execute
-  			 * after `delay` ms.
-  			 *
-  			 * If `debounceMode` is false (at end), schedule `callback` to
-  			 * execute after `delay` ms.
-  			 */
-  			timeoutID = setTimeout(debounceMode ? clear : exec, debounceMode === undefined ? delay - elapsed : delay);
-  		}
+      function exec() {
+        lastExec = Date.now();
+        callback.apply(self, args);
+      }
+      /*
+       * If `debounceMode` is true (at begin) this is used to clear the flag
+       * to allow future `callback` executions.
+       */
 
-  	}
 
-  	// Return the wrapper function.
-  	return wrapper;
+      function clear() {
+        timeoutID = undefined;
+      }
 
+      if (debounceMode && !timeoutID) {
+        /*
+         * Since `wrapper` is being called for the first time and
+         * `debounceMode` is true (at begin), execute `callback`.
+         */
+        exec();
+      }
+
+      clearExistingTimeout();
+
+      if (debounceMode === undefined && elapsed > delay) {
+        /*
+         * In throttle mode, if `delay` time has been exceeded, execute
+         * `callback`.
+         */
+        exec();
+      } else if (noTrailing !== true) {
+        /*
+         * In trailing throttle mode, since `delay` time has not been
+         * exceeded, schedule `callback` to execute `delay` ms after most
+         * recent execution.
+         *
+         * If `debounceMode` is true (at begin), schedule `clear` to execute
+         * after `delay` ms.
+         *
+         * If `debounceMode` is false (at end), schedule `callback` to
+         * execute after `delay` ms.
+         */
+        timeoutID = setTimeout(debounceMode ? clear : exec, debounceMode === undefined ? delay - elapsed : delay);
+      }
+    }
+
+    wrapper.cancel = cancel; // Return the wrapper function.
+
+    return wrapper;
   }
 
   /* eslint-disable no-undefined */
-
   /**
    * Debounce execution of a function. Debouncing, unlike throttling,
    * guarantees that a function is only executed a single time, either at the
@@ -333,8 +343,9 @@
    *
    * @return {Function} A new, debounced function.
    */
-  function debounce ( delay, atBegin, callback ) {
-  	return callback === undefined ? throttle(delay, atBegin, false) : throttle(delay, callback, atBegin !== false);
+
+  function debounce (delay, atBegin, callback) {
+    return callback === undefined ? throttle(delay, atBegin, false) : throttle(delay, callback, atBegin !== false);
   }
 
   var index_esm = /*#__PURE__*/Object.freeze({
@@ -728,11 +739,11 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(SmartQuery).call(this, vm, key, options, false));
 
-      _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "type", 'query');
+      _defineProperty(_assertThisInitialized(_this), "type", 'query');
 
-      _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "vueApolloSpecialKeys", VUE_APOLLO_QUERY_KEYWORDS);
+      _defineProperty(_assertThisInitialized(_this), "vueApolloSpecialKeys", VUE_APOLLO_QUERY_KEYWORDS);
 
-      _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "_loading", false);
+      _defineProperty(_assertThisInitialized(_this), "_loading", false);
 
       _this.firstRun = new Promise(function (resolve, reject) {
         _this._firstRunResolve = resolve;
@@ -1099,9 +1110,9 @@
 
       _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(SmartSubscription)).call.apply(_getPrototypeOf2, [this].concat(args)));
 
-      _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "type", 'subscription');
+      _defineProperty(_assertThisInitialized(_this), "type", 'subscription');
 
-      _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "vueApolloSpecialKeys", ['variables', 'result', 'error', 'throttle', 'debounce', 'linkedQuery']);
+      _defineProperty(_assertThisInitialized(_this), "vueApolloSpecialKeys", ['variables', 'result', 'error', 'throttle', 'debounce', 'linkedQuery']);
 
       return _this;
     }
@@ -1792,7 +1803,7 @@
       // Temporary retro-compatibility
       var provided = typeof options.provide === 'function' ? options.provide.call(this) : options.provide;
 
-      if (provided.$apolloProvider) {
+      if (provided && provided.$apolloProvider) {
         this.$apolloProvider = provided.$apolloProvider;
       }
     }
